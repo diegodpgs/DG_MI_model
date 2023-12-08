@@ -1,3 +1,5 @@
+import os
+
 def getSentences(conllu_file):
   sentences = []
   sentence = ''

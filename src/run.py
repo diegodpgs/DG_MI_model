@@ -1,5 +1,7 @@
-import MImodel
-import cv
+from MImodel import *
+import os
+from cv import *
+import argparse
 
 def getFileName(language,arguments):
 
@@ -27,21 +29,32 @@ def runExperiments(PATH,language,data_train,data_test,smoothing,max_d_r,max_s):
 
   return MM.testExp(data_test,language,arguments['max_d_r'],arguments['max_s'])
 
-if "__main__":
-  languagesCV = getCVFolders()
-  for max_s in [10,40]:
-      for max_d_r in [1,2,3,4,5,max_s]:
-          #print('Executando %d %d' % (max_s,max_d_r))
-          for language, data in languages_CV.items():
-            train_folder, test_folder = data['train'],data['test']
-            ddas = []
-            udas = []
-            #print('Processing %s' % language)
-            #print('TRAIN %d  TEST %d' % (len(train_folder[0]), len(test_folder[0])))
-            
-            for index in range(len(train_folder)):
-                  UDA, DDA = runExperiments('/content/data',language,train_folder[index].split('\n'),test_folder[index].split('\n'),'laplace',max_d_r,max_s)
-                  if UDA != 0:
-                    ddas.append(DDA)
-                    udas.append(UDA)
-            print('%s;%.5f;%.5f;%d;%d' % (language,np.average(udas),np.average(ddas),max_s,max_d_r))
+
+
+
+parser = argparse.ArgumentParser(description='Indigenous languages')
+parser.add_argument('--PATH',default='/home', type=str,help="CONLLU files PATH")
+parser.add_argument('--max_d_r',default='2',type=str,help='permutation distance between two tokens. Use , to separated different values')
+parser.add_argument('--max_s',default='40',type=str,help='The maximum sentence length. Use , to separated different values')
+args = parser.parse_args()
+
+
+
+
+languagesCV = getCVFolders(args.PATH)
+for max_s in [int(i) for i in args.max_s.split(',')]:
+  max_d_r_list = [int(i) for i in args.max_d_r.split(',')]
+  max_d_r_list.append(max_s)
+
+  for max_d_r in max_d_r_list:
+    for language, data in languagesCV.items():
+      train_folder, test_folder = data['train'],data['test']
+      ddas = []
+      udas = []
+           
+      for index in range(len(train_folder)):
+            UDA, DDA = runExperiments('/content/data',language,train_folder[index].split('\n'),test_folder[index].split('\n'),'laplace',max_d_r,max_s)
+            if UDA != 0:
+              ddas.append(DDA)
+              udas.append(UDA)
+      print('%s;%.5f;%.5f;%d;%d' % (language,np.average(udas),np.average(ddas),max_s,max_d_r))
