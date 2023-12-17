@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections import Counter
+from udmodel import *
 import numpy as np
 import os
 import time
@@ -9,6 +10,7 @@ class MImodel:
 
   def __init__(self,PATH,sentence_length):
     self.PATH = PATH
+    self.ud_model = UDModel()
     self.mult_dists_x = {}
     self.mult_dists_yx = {}
     self.matchs_DDA = {}
@@ -21,55 +23,6 @@ class MImodel:
     self.sentence_length = sentence_length
     self.__initVariables()
 
-  def parseConllu(self,data_CONLLU):
-    conllu_parsed = []
-    es = 0
-    
-    sentence = []
-    
-    for line in data_CONLLU:
-
-        if self.__end_sentence__(line):
-          conllu_parsed.append((self.getSentenceDepRelations(sentence),sentence))
-          sentence = []
-          es += 1
-
-        elif self.__is_validconst__(line):
-          sentence.append(self.parseLine(line))
-
-    return {'depRel':[lp[0] for lp in conllu_parsed],'sentence':[lp[1] for lp in conllu_parsed]}
-
-  def getSentenceDepRelations(self,sentence):
-    deprel = []
-    ids = dict([(const['ID'],const[self.__content__]) for const in sentence])
-    idspos = dict([(const['ID'],const['UPOS']) for const in sentence])
-
-
-    for line in sentence:
-      if ':' in line['DEPREL']:
-        line['DEPREL'] = line['DEPREL'].split(':')[0]
-
-      if line['HEAD'] == '0':
-        deprel.append({'HEAD':'root',
-                       'DEP':line[self.__content__],
-                       'DEPREL':line['DEPREL'],
-                       'UPOSD':line['UPOS'],
-                       'UPOSH':line['UPOS'],
-                       'distance_dep_relation':line['distance_dep_relation']})
-      else:
-        deprel.append({'HEAD':ids[line['HEAD']],
-                       'DEP':line[self.__content__],
-                       'UPOSD':line['UPOS'],
-                       'UPOSH':idspos[line['HEAD']],
-                       'DEPREL':line['DEPREL'],
-                       'distance_dep_relation':line['distance_dep_relation']})
-
-
-    return deprel
-
-
-            
-  
   def __initVariables(self):
 
     
@@ -109,9 +62,6 @@ class MImodel:
 
     return join*(np.log2(distyx)+np.log2(totalfreq)-np.log2(distx)-np.log2(disty))
 
-  def __end_sentence__(self,line):
-    return True if len(line) == 0 else False
-
   def __is_validconst__(self,line):
     idtoken = line.split()[0]
 
@@ -127,7 +77,7 @@ class MImodel:
 
       while index < len(CONLLU_file):
        
-        if self.__end_sentence__(CONLLU_file[index]):
+        if self.ud_model.end_sentence__(CONLLU_file[index]):
           previous_token = ''
           previous_lema = ''
         elif self.__is_validconst__(CONLLU_file[index]):
@@ -146,28 +96,6 @@ class MImodel:
         index += 1
 
       return dist_x, dist_yx
-
-
-  def parseLine(self,const):
-    """We used the same terms described in https://universaldependencies.org/format.html at 26 September 2023"""
-
-    field = const.split('\t')
-    distance = abs(int(field[0])-int(field[6]))
-
-
-
-    return {'distance_dep_relation':distance,
-            'ID':field[0],
-            'FORM':field[1],
-            'lema_pos':'%s_%s' % (field[2],field[3]),
-            'LEMMA':field[2],
-            'UPOS':field[3],
-            'XPOS':field[4],
-            'FEATS':field[5],
-            'HEAD':field[6],
-            'DEPREL':field[7]}
-
-
 
   def combination(self,language, sentence,distance_limit):
 
@@ -254,7 +182,9 @@ class MImodel:
     self.mult_dists_yx = dists[1]
 
   def testExp(self,data_test,language,max_distance_relations,max_length_sentence):
-    parsed = self.parseConllu(data_test)
+    print(1/0)
+
+    parsed = self.ud_model.parseConllu(data_test) #TODO precisa adaptar o retorno disso ({'depRel':[lp[0] for lp in conllu_parsed],'sentence':[lp[1] for lp in conllu_parsed]}) para isso (conllu_parsed[0:-1])
    
     #{'depRel':[lp[0] for lp in conllu_parsed],'sentence':[lp[1] for lp in conllu_parsed]}
 
@@ -270,7 +200,7 @@ class MImodel:
       if len(sentence) > max_length_sentence:
         continue
 
-      #sf = self.__get_sentence_form(sentence).split()
+
       startp = time.time()
 
       #if index_sentence % 200 == 0:
