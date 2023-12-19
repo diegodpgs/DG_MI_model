@@ -70,11 +70,14 @@ class UDModel:
       es = 0
 
       sentence = []
-
+      sent_id = ''
       for line in open(data_CONLLU).read().split('\n'):
 
+          if '# sent_id = ' in line:
+            sent_id = line.split('# sent_id = ')[1]
+
           if self.end_sentence__(line):
-            conllu_parsed.append((self.getSentenceDepRelations(sentence),self.get_sentence_form(sentence)))
+            conllu_parsed.append((self.getSentenceDepRelations(sentence),(sent_id,sentence)))
             sentence = []
             es += 1
 
@@ -94,7 +97,7 @@ class UDModel:
 
       for sentence in conllu_parsed:
         depSen = sentence[0]
-        data['sentence_len'].append(len(sentence[1]))
+        data['sentence_len'].append(len(sentence[1][1]))
 
         for const in depSen:
           data['distance_dep_relation'].append(const['distance_dep_relation'])
@@ -108,13 +111,18 @@ class UDModel:
       writer_statistical.write('Distance|Average:%.3f|Min:%d|Max:%d\n' % (np.average(data['distance_dep_relation']),
                                                      min(data['distance_dep_relation']),
                                                      max(data['distance_dep_relation'])))
-      writer_statistical.write('Tokens length|Average:%.3f|Min:%d|Max:%d\n' % (np.average([len(td) for td in data['token']]),
+      writer_statistical.write('Tokens length|Total:%d|Average:%.3f|Min:%d|Max:%d\n' % (len([td for td in data['token']]),
+                                                    np.average([len(td) for td in data['token']]),
                                                      min([len(td) for td in data['token']]),
                                                      max([len(td) for td in data['token']])))
 
-      writer_statistical.write('Sentence length|Average:%.3f|Min:%d|Max:%d\n' % (np.average(data['sentence_len']),
+      writer_statistical.write('Sentence length|Total:%d|Average:%.3f|Min:%d|Max:%d\n' % (len(data['sentence_len']),
+                                                     np.average(data['sentence_len']),
                                                      min(data['sentence_len']),
                                                      max(data['sentence_len'])))
+
+      writer_statistical.write('Sentence length|10:%.3f|40:%d\n' % ([s<= 10 for s in data['sentence_len']].count(True)/len(data['sentence_len']),
+                                                     [s<= 40 for s in data['sentence_len']].count(True)/len(data['sentence_len'])))
 
       writer_statistical.write('Token Frequency\n')
       for token in cl.Counter(data['token']).most_common():

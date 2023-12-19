@@ -8,8 +8,7 @@ import random
 
 class MImodel:
 
-  def __init__(self,PATH,sentence_length):
-    self.PATH = PATH
+  def __init__(self,sentence_length):
     self.ud_model = UDModel()
     self.mult_dists_x = {}
     self.mult_dists_yx = {}
@@ -98,7 +97,7 @@ class MImodel:
       return dist_x, dist_yx
 
   def combination(self,language, sentence,distance_limit):
-
+    
     list_combinations = []
     for index_c1, const1 in enumerate(sentence):
 
@@ -107,6 +106,7 @@ class MImodel:
           continue
 
         if index_c2 - index_c1 <= distance_limit:
+
           const1_form = const1[self.__content__].replace('--','-')
           const2_form = sentence[index_c2][self.__content__].replace('--','-')
 
@@ -182,11 +182,11 @@ class MImodel:
     self.mult_dists_yx = dists[1]
 
   def testExp(self,data_test,language,max_distance_relations,max_length_sentence):
-    print(1/0)
+    
 
-    parsed = self.ud_model.parseConllu(data_test) #TODO precisa adaptar o retorno disso ({'depRel':[lp[0] for lp in conllu_parsed],'sentence':[lp[1] for lp in conllu_parsed]}) para isso (conllu_parsed[0:-1])
-   
-    #{'depRel':[lp[0] for lp in conllu_parsed],'sentence':[lp[1] for lp in conllu_parsed]}
+    parsed = self.ud_model.parseConllu(data_test) 
+    parsed = ({'depRel':[lp[0] for lp in parsed],'sentence':[lp[1][1] for lp in parsed]}) 
+
 
     total_sentences = len(parsed['sentence'])
     permutation_count = 0
@@ -196,16 +196,12 @@ class MImodel:
     self.syntatic_relations_testset = {}
 
     for index_sentence, sentence in enumerate(parsed['sentence']):
-
+      
       if len(sentence) > max_length_sentence:
         continue
 
 
       startp = time.time()
-
-      #if index_sentence % 200 == 0:
-      #  print('%.1f%% sentences processed ' % ((index_sentence/len(parsed['sentence']))*100))
-
 
       p = self.combination(language,sentence,max_distance_relations)
 
