@@ -1,5 +1,6 @@
 import os
 import shutil
+import argparse
 
 def getSentences(conllu_file):
   sentences = []
@@ -12,6 +13,7 @@ def getSentences(conllu_file):
     else:
        sentence += line+'\n'
   
+
   return sentences
 
 def CV(sentences):
@@ -19,9 +21,9 @@ def CV(sentences):
   folders_split = ['' for i in range(5)]
   folders = [{'train':'','test':''} for i in range(5)]
 
- 
+  
   for index in range(len(sentences)):
-    folders_split[index % 5] += '\n'.join(sentences[index])
+    folders_split[index % 5] += sentences[index]+'\n'
 
   for index in range(5):
     folders[index]['test']  = folders_split[index]
@@ -37,6 +39,7 @@ def getCVFolders(PATH_CONLLU):
 
     
     for arquivo in os.listdir(PATH):
+      if '.conllu' in arquivo:
         folders = CV(getSentences(PATH+'/'+arquivo))
         languages_CV[language] = {'test':[f['test'] for f in folders],'train':[f['train'] for f in folders]}
   
@@ -48,7 +51,7 @@ def createFolders(PATH,folders):
   try:
     os.mkdir(PATH)
   except:
-    print(PATH,' Already exist. All files within folder will be deleted')
+    print(PATH,' Already exist. All files within will be deleted.')
     shutil.rmtree(PATH)
     os.mkdir(PATH)
 
@@ -66,11 +69,11 @@ def createFolders(PATH,folders):
         writerTR.write(conllu)
   
 
-  # if language not in os.listdir(PATH):
-  #   os.mkdir(language)
+parser = argparse.ArgumentParser(description='cross validation config')
+parser.add_argument('--PATH_data',type=str,help='Data provided to cross validation. The Conllu files must be included withing a folder for each language.')
+parser.add_argument('--PATH_dest',type=str,help='Folder wich will be included the cross validation files')
+args = parser.parse_args()
 
-  # writer_test = open('%s/%s_test_.conllu')
-    
 if "__main__":
-  folders = getCVFolders('/home/diego/ProjectGit/DG_MI_model/data/')  
-  createFolders('/home/diego/ProjectGit/DG_MI_model/data_cv/',folders)
+  folders = getCVFolders(args.PATH_data)  
+  createFolders(args.PATH_dest,folders)
